@@ -1,0 +1,91 @@
+# Palantir Probability
+output: html_document
+
+## Load CRAN packages:
+
+library(reticulate)
+
+## Set Python environment:
+
+use_python("/opt/miniconda3/envs/palantir/bin/python")
+
+## Import Python modules:
+
+import palantir
+import scanpy as sc
+import numpy as np
+import pandas as pd
+import os
+import harmony
+import matplotlib
+import matplotlib.pyplot as plt
+
+## Set random seed:
+
+np.random.seed(1101110111)
+
+## Read experiment data:
+
+ann = sc.read("PATH.h5ad")
+
+## Convert PCA array to DataFrame:
+
+pca = pd.DataFrame(data = ann.obsm["pca.corrected"], index = ann.obs_names, columns = range(0, 50))
+
+## Convert UMAP array to DataFrame:
+
+umap = pd.DataFrame(data = ann.obsm["umap"], index = ann.obs_names, columns = ["x", "y"])
+
+## Create a diffusion map:
+
+dim = palantir.utils.run_diffusion_maps(pca, n_components = 15)
+
+## Determine multiscale space:
+
+mds = palantir.utils.determine_multiscale_space(dim)
+
+## Create a force directed layout:
+
+fdl = harmony.plot.force_directed_layout(dim['kernel'], ann.obs_names)
+
+## Get index of early cell:
+
+ids = ann.obs["celltype"]
+id1 = ann.obs["early.cell"]
+id1 = ids[id1]
+
+## Run Palantir algorithm:
+
+pal = palantir.core.run_palantir(mds, early_cell = id1.index, n_jobs = 1) # n_jobs must be set to 1 or it causes a fatal error!
+
+## Rename terminal state cells by their celltype:
+
+pal.branch_probs.columns = ids[pal.branch_probs.columns]
+
+## Plot Palantir results with UMAP:
+
+fig = palantir.plot.plot_palantir_results(pal, umap); plt.show()
+
+## Plot Palantir results with force directed layout:
+
+fig = palantir.plot.plot_palantir_results(pal, fdl); plt.show()
+
+## Save entropy and pseudotime results in experiment data:
+
+ann.obs["palantir.entropy"] = pal.entropy
+ann.obs["palantir.pseudotime"] = pal.pseudotime
+
+## Save terminal state results in experiment data:
+
+obs = pal.branch_probs
+obs.columns = "palantir.terminal." + obs.columns.astype(str)
+ann.obs = pd.concat([ann.obs, obs], axis = 1)
+
+## Save force directed layout in experiment data:
+
+ann.obsm["fdl"] = fdl.to_numpy()
+
+## Save data in H5AD format to disk:
+
+ann.write("PATH.h5ad")
+
