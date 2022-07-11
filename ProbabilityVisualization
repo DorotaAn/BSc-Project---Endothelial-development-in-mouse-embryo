@@ -1,0 +1,153 @@
+# Cell Fate probability of Mouse Gastrulation Atlas
+
+## Libraries
+
+library(MouseGastrulationData)
+library(scater)
+library(scran)
+library(scuttle)
+library(TSCAN)
+library(zellkonverter)
+library(ggforce)
+
+## Data Loading
+## Loading of the data obtained from Python (palantir).
+
+palantir = readH5AD("PATH.h5ad")
+
+## Data visualization
+
+### Pseudotime
+### Data obtained from palantir was plotted using umap, according to cell fate probability pseudotime (Figure 1).
+
+plotReducedDim(palantir, "umap", colour_by = "palantir.pseudotime") 
+
+### Differentiation potential
+
+#### All data
+#### Data obtained from palantir was plotted using umap, according to the cell fate probability scores (Figure 2).
+
+plotReducedDim(palantir, "umap", colour_by = "palantir.entropy")
+
+#### Terminal states
+#### Adjusting the column name, so it can be used by ggplot.
+
+ind <- which(colnames(colData(palantir)) == "palantir.terminal.Paraxial mesoderm")
+colnames(colData(palantir))[ind] <- "palantir.terminal.Posterior_somites"
+ind <- which(colnames(colData(palantir)) == "palantir.terminal.ExE endoderm")
+colnames(colData(palantir))[ind] <- "palantir.terminal.Exe_endoderm"
+ind <- which(colnames(colData(palantir)) == "palantir.terminal.ExE ectoderm")
+colnames(colData(palantir))[ind] <- "palantir.terminal.Exe_ectoderm"
+
+ind <- which(sce$celltype == "Somitic mesoderm")
+sce$celltype[ind] <- "Anterior somites"
+ind <- which(sce$celltype == "Paraxial mesoderm")
+sce$celltype[ind] <- "Posterior somites"
+
+#### Creation of per-cell data.frame for ggplot.
+
+dat <- makePerCellDF(palantir, use.dimred = "umap")
+
+##### Allantois
+#####The data obtained from palantir was visualized using Allantois as a terminal state using umap, according to the cell fate probability (Figure 3).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Allantois)) + 
+    theme_void()
+
+##### Cardiomyocytes
+##### The data obtained from palantir was visualized using Cardiomyocytes as a terminal state using umap, according to the cell fate probability (Figure 4).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Cardiomyocytes)) + 
+    theme_void()
+
+##### Endothelium
+##### The data obtained from palantir was visualized using Endothelium as a terminal state using umap, according to the cell fate probability (Figure 5).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Endothelium)) + 
+    theme_void()
+
+#### Selecting only the cells with odds of becoming endothelium higher than 0
+
+ind <- which(palantir$palantir.terminal.Endothelium > 0)
+temp <- palantir[, ind]
+
+#### Define function to plot terminal probability:
+
+plot.terminal <- function(x, terminal, name) {
+
+df <- makePerCellDF(x)
+  
+  df <- subset(df, !is.na(df[[terminal]])) # remove cells with NA value
+  mu <- aggregate(
+    x = df[[terminal]],
+    by = list(celltype = df$celltype), 
+    FUN = mean
+  )
+  
+  mu <- setNames(mu$x, mu$celltype)
+  
+  mu <- sort(mu, decreasing = FALSE)
+  
+  df$celltype <- factor(df$celltype, levels = names(mu))
+  
+  ggplot(df, aes_string("celltype", terminal)) + 
+    stat_summary(fun.data = "mean_se", show.legend = FALSE) + 
+    coord_flip() + 
+    theme_bw() + 
+    facet_grid(~ stage) + 
+    labs(x = "Celltype", y = "Terminal", title = name)
+}
+
+#### The visualization of the cells which have probability higher than 0, by dot plot (Figure 6).
+
+plot.terminal(
+  x = palantir, 
+  terminal = "palantir.terminal.Endothelium", 
+  name = "Endothelium"
+)
+
+##### Erythroid3
+##### The data obtained from palantir was visualized using Erythroid3 as a terminal state using umap, according to the cell fate probability (Figure 7).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Erythroid3)) + 
+    theme_void()
+
+##### Extra embryonic ectoderm
+##### The data obtained from palantir was visualized using Exe ectoderm as a terminal state using umap, according to the cell fate probability (Figure 8).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Exe_ectoderm)) + 
+    theme_void()
+
+##### Extra embryonic endoderm
+##### The data obtained from palantir was visualized using Exe endoderm as a terminal state using umap, according to the cell fate probability (Figure 9).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Exe_endoderm)) + 
+    theme_void()
+
+##### Mesenchyme
+##### The data obtained from palantir was visualized using Mesenchyme as a terminal state using umap, according to the cell fate probability (Figure 10).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Mesenchyme)) + 
+    theme_void()
+
+##### Paraxial mesoderm
+##### The data obtained from palantir was visualized using Paraxial mesoderm as a terminal state using umap, according to the cell fate probability (Figure 11).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = palantir.terminal.Posterior_somites)) + 
+    theme_void()
+
+### Mouse Gastrulation Atlas colours - reference
+### Reference data obtained previously from Mouse Gastrulation Atlas visualized using umap, according to the cell type from EmbryoCelltypeColours (Figure 12).
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void()
