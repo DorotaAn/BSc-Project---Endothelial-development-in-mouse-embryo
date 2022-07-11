@@ -1,0 +1,54 @@
+# Embryo Atlas Data Preparation
+
+## Libraries
+
+library(MouseGastrulationData)
+library(scater)
+library(scran)
+library(scuttle)
+
+## Data selection 
+
+### Selection of cells from appropriate developmental stages - E8.0, E8.25 and E.85.
+### The data from developmental stages E8.0, E8.25 and E8.5 was stored in a AtlasSampleMetadata object.
+
+AtlasSampleMetadata <- subset(AtlasSampleMetadata, stage %in% c("E8.0", "E8.25", "E8.5"))
+
+### Selection of processed cells, from all samples from above stages.
+### Processed cells from all samples of above stages are included in the sce object.
+
+sce <- EmbryoAtlasData(type = "processed", samples = AtlasSampleMetadata$sample)
+
+### The doublet and Stripped nuclei exclusion  
+### Here I perform removal of doublets (two cells in a droplet) and stripped nuclei cells (cell nuclei without cytoplasm) from the experiment object.
+
+nan <- sce$doublet | sce$stripped
+ind <- !nan
+sce <- sce[, ind]
+
+## Sub-sampling  
+## selection of random 500 cells from each sample - all developmental stages stages.
+
+set.seed(0011011101)
+ind <- split(sce$cell, sce$sample)
+ind <- lapply(ind, sample, size = 500)
+ind <- unlist(ind)
+sce <- sce[, ind]
+
+## Gene selection
+## Genes, which do not have any counts are removed.
+
+mat <- counts(sce)
+ind <- rowSums(mat) > 0
+sce <- sce[ind, ]
+
+## Log transformation 
+## Data normalization - LogNorm calculation for the counts assay in entire sce object. Identification of 1000 top high variability genes (hvgs) for each sample separately and their storage in HVG for additional analysis.
+
+set.seed(1001110100)
+sce <- logNormCounts(sce)
+dec <- modelGeneVarByPoisson(sce, block = sce$sample)
+hvg1 <- getTopHVGs(dec, n = 1000)
+rowSubset(sce, "HVG") <- hvg1
+
+
