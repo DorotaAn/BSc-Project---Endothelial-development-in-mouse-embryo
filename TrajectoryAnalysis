@@ -1,0 +1,50 @@
+# Cell Fate probability of Mouse Gastrulation Atlas
+
+## Libraries
+
+library(slingshot)
+library(TSCAN)
+library(scater)
+library(scran)
+library(ggforce)
+library(uwot)
+library(MouseGastrulationData)
+
+## Data Loading
+## Loading of the originally prepared Mouse Gastrulation Data
+
+sce <- readRDS("PATH.rds", refhook = NULL)
+
+## Adaptation of batch-corrected PCA to slingshot
+
+dist_clusters_diag <- function(X, w1, w2){
+  if(length(w1) != nrow(X) | length(w2) != nrow(X)){
+    stop("Reduced dimensional matrix and weights vector contain different
+             numbers of points.")
+  }
+  mu1 <- colWeightedMeans(X, w = w1)
+  mu2 <- colWeightedMeans(X, w = w2)
+  diff <- mu1 - mu2
+  if(sum(w1>0)==1){
+    s1 <-  diag(ncol(X))
+  }else{
+    s1 <- diag(diag(cov.wt(X, wt = w1)$cov))
+  }
+  if(sum(w2>0)==1){
+    s2 <-  diag(ncol(X))
+  }else{
+    s2 <- diag(diag(cov.wt(X, wt = w2)$cov))
+  }
+  return(as.numeric(t(diff) %*% solve(s1 + s2) %*% diff))
+}
+
+## Principal curve fitting 
+## Fitting a single principal curve by using the low-dimmentional PC coordinates for denoising and speed.
+
+sce <- slingshot(sce, clusterLabels="celltype", reducedDim="pca.corrected", dist.fun = dist_clusters_diag, approx_points=100)
+
+## Data Saving
+## Saving of the prepared data, so it can be used quicker in downstream calculations and analysis.
+
+saveRDS(sce, file = "sceTrajectory.rds", ascii = FALSE, version = NULL, compress = TRUE, refhook = NULL)
+
