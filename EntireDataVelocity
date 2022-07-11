@@ -1,0 +1,153 @@
+# RNA velocity of Mouse Embryo Atlas Data
+
+## Libraries
+
+library(MouseGastrulationData)
+library(scater)
+library(scran)
+library(scuttle)
+library(velociraptor)
+library(ggplot2)
+
+## Data selection
+### Selection of cells from appropriate developmental stages - E8.0, E8.25 and E.85.
+### The data from developmental stages E8.0, E8.25 and E8.5 was stored in a AtlasSampleMetadata object.
+
+AtlasSampleMetadata <- subset(AtlasSampleMetadata, stage %in% c("E8.0", "E8.25", "E8.5"))
+
+### Selection of processed cells, from all samples from above stages.
+### All samples from above stages are included in the sce object with cells processed for spliced and unspliced scRNAseq data.
+
+sce <- EmbryoAtlasData(type = "processed", samples = AtlasSampleMetadata$sample, get.spliced = TRUE)
+
+### The doublet and Stripped nuclei exclusion
+### Here I perform removal of doublets (two cells in a droplet) and stripped nuclei cells (cell nuclei without cytoplasm) from the experiment object.
+
+nan <- sce$doublet | sce$stripped
+ind <- !nan
+sce <- sce[, ind]
+
+### Sub-sampling
+### Selection of random 500 cells from each sample - all developmental stages stages.
+
+set.seed(0011011101)
+ind <- split(sce$cell, sce$sample)
+ind <- lapply(ind, sample, size = 500)
+ind <- unlist(ind)
+sce <- sce[, ind]
+
+## Log transformation
+## Data normalization - LogNorm calculation for the counts assay in entire sce object. Identification of 1000 top high variability genes (hvgs) for each sample separately.
+
+set.seed(1001110100)
+sce <- logNormCounts(sce)
+dec <- modelGeneVarByPoisson(sce, block = sce$sample)
+hvg1 <- getTopHVGs(dec, n = 1000)
+
+## Velocity calculation
+## Calcualtion of velocity using scvelo through velociraptor.
+
+out1 <- scvelo(
+    x = sce,
+    subset.row = hvg1,
+    assay.X = "counts",
+    assay.spliced = "spliced_counts",
+    assay.unspliced = "unspliced_counts",
+    use.dimred = "pca.corrected"
+)
+
+## Velocity data processing
+### Adding of pseudotime information from scvelo into sce object.
+
+sce$pseudotime <- out1$velocity_pseudotime
+
+### Storing reduced dimmentionality data from sce “umap”.
+
+dim1 <- reducedDim(sce, "umap")
+
+### Storing calculated velocity.
+
+vel1 <- embedVelocity(dim1, out1)
+
+### Adding velocity pseudotime direction vectors.
+
+vec1 <- gridVectors(dim1, vel1, resolution = 30)
+
+## Data Visualization - UMAP
+### Velocity by pseudotime
+### The Figure 1 visualizes velocity with reduced dimentionality data. Arrows represent velocity direction vectors. Colouring according to pseudotime.
+
+plotReducedDim(sce, "umap", colour_by = "pseudotime") + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed")
+    )
+
+## Velocity by cell type
+
+plotReducedDim(sce, "umap", colour_by = "celltype") + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed")
+    )
+
+### Creation of per-cell data.frame for ggplot
+
+dat <- makePerCellDF(sce, use.dimred = "umap")
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed"),
+        inherit.aes = FALSE
+    ) + 
+    theme_void()
+
+### Creating a new column with cells of interest for visualization.
+
+dat$annotation <- NA
+dat$annotation[dat$celltype == "Endothelium"] <- "Endothelium"
+dat$annotation[dat$celltype == "Paraxial mesoderm"] <- "Paraxial mesoderm"
+dat$annotation[dat$celltype == "Somitic mesoderm"] <- "Somitic mesoderm"
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = annotation)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours, na.value = "grey92") + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed"),
+        inherit.aes = FALSE
+    ) + 
+    theme_void()
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype), show.legend = FALSE) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed"),
+        inherit.aes = FALSE
+    ) + 
+    facet_wrap(~ stage, nrow = 2) + 
+    theme_void() + 
+    theme(aspect.ratio = 1)
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = annotation), show.legend = FALSE) + 
+    scale_colour_manual(values = EmbryoCelltypeColours, na.value = "grey92") + 
+    geom_segment(
+        data = vec1,
+        mapping = aes(x = start.x, y = start.y, xend = end.x, yend = end.y),
+        arrow = arrow(length = unit(0.05, "inches"), type = "closed"),
+        inherit.aes = FALSE
+    ) + 
+    facet_wrap(~ stage, nrow = 2) + 
+    theme_void() + 
+    theme(aspect.ratio = 1)
