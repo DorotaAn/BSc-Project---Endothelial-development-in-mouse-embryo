@@ -1,0 +1,413 @@
+# Trajectory analyzis of Mouse Gastrulation Atlas Data - Part 2
+
+## Libraries
+
+library(slingshot)
+library(TSCAN)
+library(scater)
+library(scran)
+library(ggforce)
+library(MouseGastrulationData)
+library(magick)
+
+## Data Loading
+## Loading of the prepared Mouse Gastrulation Atlas data, which was adjusted and analysed using Slingshot.
+
+sce <- readRDS("D:\\Dorota_project\\trajectory\\sceTrajectory.rds", refhook = NULL)
+
+## Assignation of pseudotime
+### Incorporation of pseudotime values from sce object into matix.
+
+pseudo.paths <- slingPseudotime(sce)
+head(pseudo.paths)
+
+### Accommodation of branching.
+
+shared.pseudo <- rowMeans(pseudo.paths, na.rm=TRUE)
+
+## Visualization
+### UMAP - Pseudotime
+
+gg1 <- plotReducedDim(sce, "umap", colour_by=I(shared.pseudo)) 
+embedded <- embedCurves(sce, "umap")
+embedded <- slingCurves(embedded)
+for (path in embedded) {
+  embedded1 <- data.frame(path$s[path$ord,])
+  gg1 <- gg1 + geom_path(data=embedded1, aes(x=x, y=y), size=0.2)
+}
+
+gg1
+
+### ggplot - Cell type
+### Creation of per-cell data.frame for ggplot
+
+dat <- makePerCellDF(sce, use.dimred = "umap")
+
+#### Entire Data
+
+gg2 <- ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded) {
+df <- data.frame(path$s[path$ord, ])
+gg2 <- gg2 + geom_path(data = df, aes(x=x, y=y), size=0.2)
+}
+
+print(gg2)
+
+#### Trajectory 1
+##### Data subsetting, selecting for trajectory 1.
+
+dat$Trajectory_1 <- !is.na(dat$slingPseudotime_1)
+dat1 <- dat[dat$Trajectory_1, ]
+
+embedded1 <- embedded[1]
+
+plot1 <- ggplot(data = dat1) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded1) {
+df1 <- data.frame(path$s[path$ord, ])
+plot1 <- plot1 + geom_path(data = df1, aes(x=x, y=y), size=0.2)
+}
+
+print(plot1)
+
+#### Trajectory 2
+##### Data subsetting, selecting for trajectory 2.
+
+dat$Trajectory_2 <- !is.na(dat$slingPseudotime_2)
+dat2 <- dat[dat$Trajectory_2, ]
+
+embedded2 <- embedded[2]
+
+plot2 <- ggplot(data = dat2) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded2) {
+df2 <- data.frame(path$s[path$ord, ])
+plot2 <- plot2 + geom_path(data = df2, aes(x=x, y=y), size=0.2)
+}
+
+print(plot2)
+
+#### Trajectory 3
+##### Data subsetting, selecting for trajectory 3.
+
+dat$Trajectory_3 <- !is.na(dat$slingPseudotime_3)
+dat3 <- dat[dat$Trajectory_3, ]
+Figure 5 shows trajectory 3 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded3 <- embedded[3]
+
+plot3 <- ggplot(data = dat3) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded3) {
+df3 <- data.frame(path$s[path$ord, ])
+plot3 <- plot3 + geom_path(data = df3, aes(x=x, y=y), size=0.2)
+}
+
+print(plot3)
+
+#### Trajectory 4
+##### Data subsetting, selecting for trajectory 4.
+
+dat$Trajectory_4 <- !is.na(dat$slingPseudotime_4)
+dat4 <- dat[dat$Trajectory_4, ]
+Figure 6 shows trajectory 4 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded4 <- embedded[4]
+
+plot4 <- ggplot(data = dat4) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded4) {
+df4 <- data.frame(path$s[path$ord, ])
+plot4 <- plot4 + geom_path(data = df4, aes(x=x, y=y), size=0.2)
+}
+
+print(plot4)
+
+#### Trajectory 5
+##### Data subsetting, selecting for trajectory 5.
+
+dat$Trajectory_5 <- !is.na(dat$slingPseudotime_5)
+dat5 <- dat[dat$Trajectory_5, ]
+Figure 7 shows trajectory 5 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded5 <- embedded[5]
+
+plot5 <- ggplot(data = dat5) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded5) {
+df5 <- data.frame(path$s[path$ord, ])
+plot5 <- plot5 + geom_path(data = df5, aes(x=x, y=y), size=0.2)
+}
+
+print(plot5)
+
+#### Trajectory 6
+##### Data subsetting, selecting for trajectory 6.
+
+dat$Trajectory_6 <- !is.na(dat$slingPseudotime_6)
+dat6 <- dat[dat$Trajectory_6, ]
+Figure 8 shows trajectory 6 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded6 <- embedded[6]
+
+plot6 <- ggplot(data = dat6) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded6) {
+df6 <- data.frame(path$s[path$ord, ])
+plot6 <- plot6 + geom_path(data = df6, aes(x=x, y=y), size=0.2)
+}
+
+print(plot6)
+
+#### Trajectory 7
+##### Data subsetting, selecting for trajectory 7.
+
+dat$Trajectory_7 <- !is.na(dat$slingPseudotime_7)
+dat7 <- dat[dat$Trajectory_7, ]
+Figure 9 shows trajectory 7 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded7 <- embedded[7]
+
+plot7 <- ggplot(data = dat7) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded7) {
+df7 <- data.frame(path$s[path$ord, ])
+plot7 <- plot7 + geom_path(data = df7, aes(x=x, y=y), size=0.2)
+}
+
+print(plot7)
+
+#### Trajectory 8
+##### Data subsetting, selecting for trajectory 8.
+
+dat$Trajectory_8 <- !is.na(dat$slingPseudotime_8)
+dat8 <- dat[dat$Trajectory_8, ]
+Figure 10 shows trajectory 8 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded8 <- embedded[8]
+
+plot8 <- ggplot(data = dat8) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded8) {
+df8 <- data.frame(path$s[path$ord, ])
+plot8 <- plot8 + geom_path(data = df8, aes(x=x, y=y), size=0.2)
+}
+
+print(plot8)
+
+#### Trajectory 9
+##### Data subsetting, selecting for trajectory 9.
+
+dat$Trajectory_9 <- !is.na(dat$slingPseudotime_9)
+dat9 <- dat[dat$Trajectory_9, ]
+Figure 11 shows trajectory 9 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded9 <- embedded[9]
+
+plot9 <- ggplot(data = dat9) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded9) {
+df9 <- data.frame(path$s[path$ord, ])
+plot9 <- plot9 + geom_path(data = df9, aes(x=x, y=y), size=0.2)
+}
+
+print(plot9)
+
+#### Trajectory 10
+##### Data subsetting, selecting for trajectory 10.
+
+dat$Trajectory_10 <- !is.na(dat$slingPseudotime_10)
+dat10 <- dat[dat$Trajectory_10, ]
+Figure 12 shows trajectory 10 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded10 <- embedded[10]
+
+plot10 <- ggplot(data = dat10) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded10) {
+df10 <- data.frame(path$s[path$ord, ])
+plot10 <- plot10 + geom_path(data = df10, aes(x=x, y=y), size=0.2)
+}
+
+print(plot10)
+
+#### Trajectory 11
+##### Data subsetting, selecting for trajectory 11.
+
+dat$Trajectory_11 <- !is.na(dat$slingPseudotime_11)
+dat11 <- dat[dat$Trajectory_11, ]
+Figure 13 shows trajectory 11 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded11 <- embedded[11]
+
+plot11 <- ggplot(data = dat11) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded11) {
+df11 <- data.frame(path$s[path$ord, ])
+plot11 <- plot11 + geom_path(data = df11, aes(x=x, y=y), size=0.2)
+}
+
+print(plot11)
+
+#### Trajectory 12
+##### Data subsetting, selecting for trajectory 12.
+
+dat$Trajectory_12 <- !is.na(dat$slingPseudotime_12)
+dat12 <- dat[dat$Trajectory_12, ]
+Figure 14 shows trajectory 12 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded12 <- embedded[12]
+
+plot12 <- ggplot(data = dat12) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded12) {
+df12 <- data.frame(path$s[path$ord, ])
+plot12 <- plot12 + geom_path(data = df12, aes(x=x, y=y), size=0.2)
+}
+
+print(plot12)
+
+#### Trajectory 13
+##### Data subsetting, selecting for trajectory 13.
+
+dat$Trajectory_13 <- !is.na(dat$slingPseudotime_13)
+dat13 <- dat[dat$Trajectory_13, ]
+Figure 15 shows trajectory 13 identified in Mouse Gastrulation Data at stages E8.0, E8.25 and E8.5. Cells are colored by cell type of EmbryoCelltypeColour and are visualized on ggplot.
+
+embedded13 <- embedded[13]
+
+plot13 <- ggplot(data = dat13) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    theme_void() 
+
+for (path in embedded13) {
+df13 <- data.frame(path$s[path$ord, ])
+plot13 <- plot13 + geom_path(data = df13, aes(x=x, y=y), size=0.2)
+}
+
+print(plot13)
+
+## Endothelia, Somitic mesoderm and Paraxial mesoderm in trajectories
+## Identifying in which trajectories cells of interest are present.
+
+### Endothelium
+### Checking which trajectories include endothelial cells.
+
+#### Matrix of pseudotime values
+#### Creating a matrix of pseudotime values for cells and curves.
+
+mat1 <- slingPseudotime(sce)
+
+#### Vector of “Endothelium”
+#### Creating a vector of cells, whose name are labeled “Endothelium”.
+
+ids1 <- sce$cell[sce$celltype == "Endothelium"]
+
+#### Matrix of “Endothelium” cells
+####Sub-setting the pseudotime values in the matrix into “Endothelium” cells.
+
+mat1 <- mat1[ids1, ]
+
+#### Columns with non-Na values
+#### Identifying which columns have non-NA values in the pseudotime matrix.
+
+ind1 <- apply(mat1, 2, function(x) !all(is.na(x)))
+
+#### Trajectories containing Endothelial Cells
+cur1 <- colnames(mat1)[ind1]
+cur1
+
+### Somitic Mesoderm
+### Checking which trajectories include somitic mesoderm cells.
+
+#### Matrix of pseudotime values
+#### Creating a matrix of pseudotime values for cells and curves.
+
+mat2 <- slingPseudotime(sce)
+
+#### Vector of “Somitic mesoderm”
+#### Creating a vector of cells, whose name are labeled “Somitic mesoderm”.
+
+ids2 <- sce$cell[sce$celltype == "Somitic mesoderm"]
+
+#### Matrix of “Somitic mesoderm” cells
+#### Sub-setting the pseudotime values in the matrix into “Somitic mesoderm” cells.
+
+mat2 <- mat2[ids2, ]
+
+#### Columns with non-NA values
+#### Identifying which columns have non-NA values in the pseudotime matrix.
+
+ind2 <- apply(mat2, 2, function(x) !all(is.na(x)))
+
+#### Trajectories containing Somitic mesoderm cells
+cur2 <- colnames(mat2)[ind2]
+cur2
+
+### Paraxial Mesoderm
+### Checking which trajectories include Paraxial mesoderm cells.
+
+#### Matrix of pseudotime values
+#### Creating a matrix of pseudotime values for cells and curves.
+
+mat3 <- slingPseudotime(sce)
+
+#### Vector of “Paraxial mesoderm”
+#### Creating a vector of cells, whose name are labeled “Paraxial mesoderm”.
+
+ids3 <- sce$cell[sce$celltype == "Paraxial mesoderm"]
+
+#### Matrix of “Paraxial mesoderm” cells
+#### Sub-setting the pseudotime values in the matrix into “Paraxial mesoderm” cells.
+
+mat3 <- mat3[ids3, ]
+
+#### Columns with non-NA values
+#### Identifying which columns have non-NA values in the pseudotime matrix.
+
+ind3 <- apply(mat3, 2, function(x) !all(is.na(x)))
+
+#### Trajectories containing Paraxial mesoderm cells
+cur3 <- colnames(mat3)[ind3]
+cur3
