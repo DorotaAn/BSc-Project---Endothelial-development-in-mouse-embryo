@@ -1,0 +1,53 @@
+# Entropy calculation for Palantir
+
+## Libraries
+
+library(scater)
+library(scran)
+library(scuttle)
+library(TSCAN)
+library(zellkonverter)
+library(ggplot2)
+library(ggforce)
+
+## Cell entropy
+## Calculation of entropy for each cell in all samples of all stages.
+
+sce$entropy <- perCellEntropy(sce)
+
+## Data visualization
+### Creation of per-cell data.frame for ggplot.
+
+dat <- makePerCellDF(sce, use.coldata = c("celltype", "entropy"), use.dimred = FALSE)
+
+### The Figure 1 visualizes cell entropy for entire data, colored by cell type from EmbryoCelltypeColours.
+
+ggplot(dat, aes(reorder(celltype, entropy, mean), entropy, colour = celltype)) + 
+    geom_sina(show.legend = FALSE) + 
+    scale_colour_manual(values = EmbryoCelltypeColours) + 
+    coord_flip() + 
+    labs(x = NULL, y = "Entropy") + 
+
+        theme_bw()
+
+### Cell entropy
+### Selection of cells with maximum and minimum entropy.
+
+ind <- setNames(sce$entropy, sce$cell)
+ind <- split(ind, sce$celltype)
+ind.min <- sapply(ind, function(x) names(which.min(x)))
+ind.max <- sapply(ind, function(x) names(which.max(x)))
+
+### Labeling of cells with minimum and maximum entropy per cell type.
+
+sce$entropy.min <- sce$cell %in% ind.min
+sce$entropy.max <- sce$cell %in% ind.max
+
+### Labeling of cells used as the early cell in Palantir analysis.
+
+sce$early.cell <- sce$cell %in% ind.max[["Caudal epiblast"]]
+
+## Data saving
+## The data is saved in H5AD format on disk.
+
+writeH5AD(sce, "PATH", X_name = "logcounts", skip_assays = FALSE) 
