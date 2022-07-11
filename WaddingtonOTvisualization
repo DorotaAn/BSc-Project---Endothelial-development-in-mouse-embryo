@@ -1,0 +1,247 @@
+# Waddington analysis of cell fate probability in Mouse Gastrulation Atlas
+
+## Libraries
+
+library(MouseGastrulationData)
+library(scater)
+library(scran)
+library(scuttle)
+library(ggforce)
+library(ggplot2)
+
+## Data Loading
+### Loading of the originally prepared Mouse Gastrulation Data.
+
+sce <- readRDS("PATH.rds", refhook = NULL)
+
+### Loading of the secondary Mouse Gastrulation Data - WaddingtonOT prepared by somebody else made available to me.
+
+sce2 <- readRDS("PATH.rds", refhook = NULL)
+
+## Subset SCE 2 object to Atlas cells
+
+sce2 <- sce2[, sce2$source == "Atlas"]
+
+## Adding new data from second sce
+
+colnames(sce) <- sce$cell
+colnames(sce2) <- sce2$cell
+ind <- intersect(sce$cell, sce2$cell)
+sce <- sce[, ind]
+sce2 <- sce2[, ind]
+var <- c("fates_7.75_endothelium", "fates_8.0_endothelium", "fates_8.25_endothelium", "fates_8.5_endothelium", "fates_7.5_paraxial.mesoderm", "fates_7.75_paraxial.mesoderm", "fates_8.0_paraxial.mesoderm", "fates_8.25_paraxial.mesoderm", "fates_8.5_paraxial.mesoderm", "fates_7.5_somitic.mesoderm", "fates_7.75_somitic.mesoderm", "fates_8.0_somitic.mesoderm", "fates_8.25_somitic.mesoderm", "fates_8.5_somitic.mesoderm", "fates_6.75_haematoendothelial.progenitors", "fates_7.0_haematoendothelial.progenitors", "fates_7.25_haematoendothelial.progenitors", "fates_7.5_haematoendothelial.progenitors", "fates_7.75_haematoendothelial.progenitors", "fates_8.0_haematoendothelial.progenitors", "fates_8.25_haematoendothelial.progenitors", "fates_8.5_haematoendothelial.progenitors")
+dat <- colData(sce2)[, var]
+colData(sce) <- cbind(colData(sce), dat)
+
+ind <- which(sce$celltype == "Somitic mesoderm")
+sce$celltype[ind] <- "Posterior somites"
+ind <- which(names(EmbryoCelltypeColours) == "Somitic mesoderm")
+names(EmbryoCelltypeColours)[ind] <- "Posterior somites"
+
+ind <- which(sce$celltype == "Paraxial mesoderm")
+sce$celltype[ind] <- "Anterior somites"
+ind <- which(names(EmbryoCelltypeColours) == "Paraxial mesoderm")
+names(EmbryoCelltypeColours)[ind] <- "Anterior somites"
+
+### Define function to plot cell fate:
+
+plot.fate <- function(x, fate, name) {
+
+  df <- makePerCellDF(x)
+  df <- subset(df, !is.na(df[[fate]]))
+  mu <- aggregate(
+    x = df[[fate]],
+    by = list(celltype = df$celltype), 
+    FUN = mean
+  )
+  mu <- setNames(mu$x, mu$celltype)
+  mu <- sort(mu, decreasing = FALSE)
+  df$celltype <- factor(df$celltype, levels = names(mu))
+  ggplot(df, aes_string("celltype", fate)) + 
+    stat_summary(fun.data = "mean_se", show.legend = FALSE) + 
+    coord_flip() + 
+    theme_bw() + 
+    facet_grid(~ stage) + 
+    labs(x = "Celltype", y = "Fate", title = name)
+}
+
+## Define function to plot UMAP by cell fate:
+plot.umap <- function(x, fate, name, colour) {
+  
+  df <- makePerCellDF(x)
+  
+  ggplot(df, aes_string("umap.1", "umap.2", colour = fate)) + 
+  geom_point() + 
+  scale_colour_gradient(
+    name = "Fate", 
+    low = "#EBEBEB", 
+    high = colour
+  ) + 
+  labs(title = name) + 
+  facet_wrap(~ stage) + 
+  theme_no_axes() + 
+  theme(aspect.ratio = 1)
+}
+
+## Data Visualization
+### Creation of per-cell data.frame for ggplot.
+
+dat <- makePerCellDF(sce, use.dimred = "umap")
+### All cell types
+
+ggplot(data = dat) + 
+    geom_point(mapping = aes(x = umap.1, y = umap.2, colour = celltype)) + 
+    theme_void() +
+    scale_colour_manual(values = EmbryoCelltypeColours)
+
+### Endothelium
+#### E8.0
+##### Selecting only the cells with odds of becoming endothelium higher than 0 - E8.0
+
+ind <- which(sce$fates_8.0_endothelium > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 2).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.0_endothelium", 
+  name = "Endothelium (E8.0)"
+)
+
+##### Visualization by UMAP
+######The data was visualized using Endothelium as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.0 (Figure 3).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.0_endothelium", 
+  name = "Endothelium (E8.0)", 
+  colour = EmbryoCelltypeColours["Endothelium"]
+)
+
+#### E8.25
+##### Selecting only the cells with odds of becoming endothelium higher than 0 - E8.25
+
+ind <- which(sce$fates_8.25_endothelium > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 4).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.25_endothelium", 
+  name = "Endothelium (E8.25)"
+)
+
+##### Visualization by UMAP
+###### The data was visualized using Endothelium as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.25 (Figure 5).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.25_endothelium", 
+  name = "Endothelium (E8.25)", 
+  colour = EmbryoCelltypeColours["Endothelium"]
+)
+
+#### E8.5
+##### Selecting only the cells with odds of becoming endothelium higher than 0 - E8.5
+
+ind <- which(sce$fates_8.5_endothelium > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 6).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.5_endothelium", 
+  name = "Endothelium (E8.5)"
+)
+
+##### Visualization by UMAP
+###### The data was visualized using Endothelium as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.5 (Figure 7).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.5_endothelium", 
+  name = "Endothelium (E8.5)", 
+  colour = EmbryoCelltypeColours["Endothelium"]
+)
+
+### Haematoendothelial progenitors
+#### E8.0
+##### Selecting only the cells with odds of becoming haematoendothelial progenitors higher than 0 - E8.0
+
+ind <- which(sce$fates_8.0_haematoendothelial.progenitors > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 8).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.0_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.0)"
+)
+
+##### Visualization by UMAP
+###### The data was visualized using Haematoendothelial progenitors as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.0 (Figure 9).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.0_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.0)", 
+  colour = EmbryoCelltypeColours["Haematoendothelial progenitors"]
+)
+
+#### E8.25
+##### Selecting only the cells with odds of becoming endothelium higher than 0 - E8.25
+
+ind <- which(sce$fates_8.25_haematoendothelial.progenitors > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 10).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.25_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.25)"
+)
+
+##### Visualization by UMAP
+###### The data was visualized using Haematoendothelial progenitors as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.25 (Figure 11).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.25_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.25)", 
+  colour = EmbryoCelltypeColours["Haematoendothelial progenitors"]
+)
+
+#### E8.5
+##### Selecting only the cells with odds of becoming endothelium higher than 0 - E8.5
+
+ind <- which(sce$fates_8.5_haematoendothelial.progenitors > 0)
+temp <- sce[, ind]
+
+##### Visualization by dot plot
+###### The visualization of the cells which have odds higher than 0, by dot plot (Figure 12).
+
+plot.fate(
+  x = sce, 
+  fate = "fates_8.5_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.5)"
+)
+
+##### Visualization by UMAP
+###### The data was visualized using Haematoendothelial progenitors as a terminal state using umap, according to the cell fate probability from Waddington analysis of Mouse Gastrulation Atlas data at stage E8.5 (Figure 13).
+
+plot.umap(
+  x = sce, 
+  fate = "fates_8.5_haematoendothelial.progenitors", 
+  name = "Haematoendothelial progenitors (E8.5)", 
+  colour = EmbryoCelltypeColours["Haematoendothelial progenitors"]
+)
